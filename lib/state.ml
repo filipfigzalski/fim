@@ -1,4 +1,5 @@
-open Types
+type mode = Normal | Insert | Command
+type t = { mode : mode; buffer : Text_buffer.t; curswant : int }
 
 let initial = { mode = Normal; buffer = Text_buffer.empty_buffer; curswant = 0 }
 
@@ -19,5 +20,3 @@ let handle_input state input =
       let new_buffer = Text_buffer.insert_uchar u state.buffer in
       { state with buffer = new_buffer }
   | _ -> state
-
-let initial = { mode = Normal; buffer = Text_buffer.empty_buffer; curswant = 0 }

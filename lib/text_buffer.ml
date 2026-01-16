@@ -1,4 +1,8 @@
-open Types
+type t = {
+  lines_above : string list;
+  current_line : Uchar.t Zipper.t;
+  lines_below : string list;
+}
 
 let empty_buffer =
   { lines_above = []; current_line = Zipper.empty; lines_below = [] }
