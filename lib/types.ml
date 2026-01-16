@@ -1,8 +1,8 @@
-type line_zipper = { left : char list; right : char list }
+type line = Uchar.t Zipper.t
 
 type text_buffer = {
   lines_above : string list;
-  current_line : line_zipper;
+  current_line : line;
   lines_below : string list;
 }
 

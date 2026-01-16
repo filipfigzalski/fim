@@ -1,15 +1,20 @@
-open Notty
 open Notty_unix
-open Fim.Types
-open Fim.Buffer
-
-let render state = I.string A.empty "Test renderowania"
+open Fim
 
 let rec loop term state =
-  Term.image term (render state);
-  match Term.event term with `Key (`Enter, _) -> () | _ -> loop term state
+  Term.image term (Ui.render state);
+
+  let col, row = Text_buffer.cursor_coords state.buffer in
+  Term.cursor term (Some (col, row));
+
+  match Term.event term with
+  | `Key (`Escape, _) -> ()
+  | `End -> ()
+  | `Key _ as key ->
+      let new_state = State.handle_input state key in
+      loop term new_state
+  | _ -> loop term state
 
 let () =
   let term = Term.create () in
-  let initial_state = { mode = Normal; buffer = empty_buffer; curswant = 0 } in
-  loop term initial_state
+  loop term State.initial
