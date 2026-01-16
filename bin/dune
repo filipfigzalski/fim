@@ -1,0 +1,4 @@
+(executable
+ (public_name fim)
+ (name main)
+ (libraries fim notty notty.unix))
