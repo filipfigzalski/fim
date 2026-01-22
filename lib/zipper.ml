@@ -14,7 +14,7 @@ let move_left z =
   match z.left with [] -> z | x :: xs -> { left = xs; right = x :: z.right }
 
 let move_right z =
-  match z.right with [] -> z | x :: xs -> { left = xs; right = x :: z.right }
+  match z.right with [] -> z | x :: xs -> { left = x :: z.left; right = xs }
 
 let insert x z = { z with left = x :: z.left }
 let prepend_left items z = { z with left = List.rev_append items z.left }
