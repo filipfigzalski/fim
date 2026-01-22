@@ -45,9 +45,10 @@ let backspace buffer =
         { buffer with lines_above = rest_above; current_line = new_zipper }
 
 let newline buffer =
-  let old_line = buffer.current_line |> Zipper.to_list |> uchars_to_string in
+  let prev, next = buffer.current_line |> Zipper.split in
+  let old_line = Zipper.to_list prev |> uchars_to_string in
   {
     buffer with
     lines_above = old_line :: buffer.lines_above;
-    current_line = Zipper.empty;
+    current_line = next;
   }

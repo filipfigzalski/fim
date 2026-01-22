@@ -11,3 +11,4 @@ val move_right : 'a t -> 'a t
 val insert : 'a -> 'a t -> 'a t
 val delete_left : 'a t -> 'a t
 val prepend_left : 'a list -> 'a t -> 'a t
+val split : 'a t -> 'a t * 'a t
