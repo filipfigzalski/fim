@@ -23,7 +23,8 @@ let rec loop term state =
   | _ -> Cursor_shape.block_steady ());
 
   match Term.event term with
-  | `Key (`Escape, _) -> ()
+  (* NOTE: this is workaround before I implement command mode *)
+  | `Key (`ASCII 'Q', mods) when List.mem `Ctrl mods -> ()
   | `End -> ()
   | `Key _ as key ->
       let new_state = State.handle_input state key in
