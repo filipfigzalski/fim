@@ -8,7 +8,10 @@ let is_empty { left; right } =
   match (left, right) with [], [] -> true | _ -> false
 
 let is_start z = match z.left with [] -> true | _ -> false
+let is_end z = match z.right with [] -> true | _ -> false
 let position z = List.length z.left
+let focus z = match z.right with [] -> None | c :: _ -> Some c
+let focus_left z = match z.left with [] -> None | c :: _ -> Some c
 
 let move_left z =
   match z.left with [] -> z | x :: xs -> { left = xs; right = x :: z.right }
