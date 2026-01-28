@@ -48,6 +48,12 @@ val move_right : 'a t -> 'a t
     If the focus is already at the end, returns unchanged zipper.
 *)
 
+val move_start : 'a t -> 'a t
+(** [move_start z] moves the cursor to the start of the zipper. *)
+
+val move_end : 'a t -> 'a t
+(** [move_end z] moves the cursor to the end of the zipper. *)
+
 val insert : 'a -> 'a t -> 'a t
 (** [insert x z] inserts element [x] at the current cursor position. *)
 

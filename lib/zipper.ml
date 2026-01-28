@@ -19,6 +19,8 @@ let move_left z =
 let move_right z =
   match z.right with [] -> z | x :: xs -> { left = x :: z.left; right = xs }
 
+let move_start z = { left = []; right = List.rev_append z.left z.right }
+let move_end z = { left = List.rev_append z.right z.left; right = [] }
 let insert x z = { z with left = x :: z.left }
 let prepend_left items z = { z with left = List.rev_append items z.left }
 
