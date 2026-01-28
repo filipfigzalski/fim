@@ -47,8 +47,13 @@ let backspace buffer =
     | [] -> buffer
     | prev_line_str :: rest_above ->
         let prev_chars = string_to_uchars prev_line_str in
-        let new_zipper = Zipper.prepend_left prev_chars buffer.current_line in
-        { buffer with lines_above = rest_above; current_line = new_zipper }
+        let new_line = Zipper.prepend_left prev_chars buffer.current_line in
+        {
+          buffer with
+          lines_above = rest_above;
+          current_line = new_line;
+          curswant = Zipper.position new_line;
+        }
 
 let newline buffer =
   let prev, next = buffer.current_line |> Zipper.split in
