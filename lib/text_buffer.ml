@@ -139,7 +139,7 @@ let step_backward buffer =
           ; lines_below= old :: buffer.lines_below }
 
 let is_alphanum = function
-  | 'a' .. 'z' | 'A' .. 'Z' | '0' .. '9' | '_' ->
+  | 'a' .. 'z' | 'A' .. 'Z' | '0' .. '9' | '_' | '@' ->
       true
   | _ ->
       false
@@ -154,15 +154,17 @@ type word_part = End | Start
 
 (* classify uchar based on the word style *)
 let get_class style u : char_class =
-  match (style, Uchar.to_char u) with
-  | _, (' ' | '\t') ->
-      Space
-  | WORD, _ ->
-      Word
-  | Word, c when is_alphanum c ->
-      Word
-  | Word, _ ->
-      Other
+  if Uchar.is_char u then
+    match (style, Uchar.to_char u) with
+    | _, (' ' | '\t') ->
+        Space
+    | WORD, _ ->
+        Word
+    | Word, c when is_alphanum c ->
+        Word
+    | Word, _ ->
+        Other
+  else Word
 
 (* helper to repeat a step function while condition holds. *)
 let rec skip_while p f buffer =
@@ -200,7 +202,6 @@ let move_word style direction trajectory buffer : t =
     match (direction, trajectory) with
     | Forward, End ->
         buffer |> step |> Option.value ~default:buffer
-    (* TODO *)
     | _ ->
         buffer
   in
