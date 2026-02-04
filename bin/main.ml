@@ -17,19 +17,24 @@ module Cursor_shape = struct
   let bar_steady () = fmt 6
 end
 
-let rec loop term state =
-  Term.image term (Ui.render state) ;
-  let col, row = Text_buffer.cursor_coords state.buffer in
-  Term.cursor term (Some (col, row)) ;
-  ( match state.mode with
+let get_buffer (State.Any state) = state.buffer
+
+let set_cursor_shape (State.Any state) =
+  match state.mode with
   | Insert ->
       Cursor_shape.bar_steady ()
-  | Normal ->
+  | Normal _ ->
       Cursor_shape.block_steady ()
-  | _ ->
-      Cursor_shape.block_steady () ) ;
+
+let rec loop term state =
+  Term.image term (Ui.render state) ;
+  (* position cursor *)
+  let buffer = get_buffer state in
+  let col, row = Text_buffer.cursor_coords buffer in
+  Term.cursor term (Some (col, row)) ;
+  set_cursor_shape state ;
   match Term.event term with
-  (* NOTE: this is workaround before I implement command mode *)
+  (* TODO: this is workaround before I implement command mode *)
   | `Key (`ASCII 'Q', mods) when List.mem `Ctrl mods ->
       ()
   | `End ->
@@ -42,4 +47,4 @@ let rec loop term state =
 
 let () =
   let term = Term.create () in
-  loop term State.initial
+  loop term (State.Any State.initial)

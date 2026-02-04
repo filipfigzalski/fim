@@ -7,7 +7,7 @@ let uchars_to_string (uchars : Uchar.t list) =
 
 let draw_line str = I.string A.empty str
 
-let render (state : State.t) =
+let render (State.Any state) =
   let above_imgs = state.buffer.lines_above |> List.rev |> List.map draw_line in
   let current_content =
     Zipper.to_list state.buffer.current_line |> Text_buffer.uchars_to_string

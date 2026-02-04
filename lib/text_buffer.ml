@@ -107,6 +107,10 @@ let move dir buffer =
           lines_above= old :: buffer.lines_above
         ; current_line
         ; lines_below } )
+  | `End ->
+      {buffer with current_line= Zipper.move_end buffer.current_line}
+  | `Start ->
+      {buffer with current_line= Zipper.move_start buffer.current_line}
 
 let step_forward buffer =
   if not (Zipper.is_end buffer.current_line) then
