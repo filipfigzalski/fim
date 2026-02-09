@@ -1,3 +1,4 @@
 (library
  (name fim)
- (libraries notty uucp))
+ (libraries notty uucp)
+ (preprocess (pps ppx_deriving.show)))

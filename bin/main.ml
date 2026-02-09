@@ -17,13 +17,13 @@ module Cursor_shape = struct
   let bar_steady () = fmt 6
 end
 
-let get_buffer (State.Any state) = state.buffer
+let get_buffer (state : State.t) = state.buffer
 
-let set_cursor_shape (State.Any state) =
+let set_cursor_shape (state : State.t) =
   match state.mode with
   | Insert ->
       Cursor_shape.bar_steady ()
-  | Normal _ ->
+  | Normal ->
       Cursor_shape.block_steady ()
 
 let rec loop term state =
@@ -39,7 +39,7 @@ let rec loop term state =
       ()
   | `End ->
       ()
-  | `Key _ as key ->
+  | `Key key ->
       let new_state = State.handle_input state key in
       loop term new_state
   | _ ->
@@ -47,4 +47,4 @@ let rec loop term state =
 
 let () =
   let term = Term.create () in
-  loop term (State.Any State.initial)
+  loop term State.empty
