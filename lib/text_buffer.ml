@@ -7,6 +7,9 @@ type t =
 let empty_buffer =
   {lines_above= []; current_line= Zipper.empty; lines_below= []; curswant= 0}
 
+(* helper to apply function n times onto some value *)
+let rec apply_n n f x = if n <= 0 then x else apply_n (n - 1) f (f x)
+
 let uchars_to_string (uchars : Uchar.t list) =
   let buf = Buffer.create (List.length uchars) in
   List.iter (Buffer.add_utf_8_uchar buf) uchars ;
@@ -56,8 +59,49 @@ let newline buffer =
   ; current_line= next
   ; curswant= 0 }
 
-(* helper to apply function n times onto some value *)
-let rec apply_n n f x = if n <= 0 then x else apply_n (n - 1) f (f x)
+let del_forward buffer =
+  let current_line = Zipper.delete_right buffer.current_line in
+  {buffer with current_line; curswant= Zipper.position current_line}
+
+let del_backward buffer =
+  let current_line = Zipper.delete_left buffer.current_line in
+  {buffer with current_line; curswant= Zipper.position current_line}
+
+let insert_line dir buffer =
+  match dir with
+  | `Below ->
+      let old_line =
+        buffer.current_line |> Zipper.to_list |> uchars_to_string
+      in
+      { buffer with
+        lines_above= old_line :: buffer.lines_above
+      ; current_line= Zipper.empty }
+  | `Above ->
+      let old_line =
+        buffer.current_line |> Zipper.to_list |> uchars_to_string
+      in
+      { buffer with
+        lines_below= old_line :: buffer.lines_below
+      ; current_line= Zipper.empty }
+
+let delete_line buffer =
+  let buffer =
+    match (buffer.lines_below, buffer.lines_above) with
+    | next :: lines_below, _ ->
+        let current_line = next |> string_to_uchars |> Zipper.of_list in
+        {buffer with current_line; lines_below}
+    | [], prev :: lines_above ->
+        let current_line = prev |> string_to_uchars |> Zipper.of_list in
+        {buffer with current_line; lines_above}
+    | [], [] ->
+        {buffer with current_line= Zipper.empty}
+  in
+  let current_line =
+    apply_n buffer.curswant Zipper.move_right buffer.current_line
+  in
+  {buffer with current_line}
+
+let reset_line buffer = {buffer with current_line= Zipper.empty}
 
 type cursor_target = Start | Curswant | End
 
