@@ -12,7 +12,33 @@ let empty : t =
   ; parser= Parser.init
   ; last_cmd= None }
 
-let execute_command (c : Command.t) (s : t) : t = {s with last_cmd= Some c}
+let rec apply_n n f x = if n <= 0 then x else apply_n (n - 1) f (f x)
+
+let execute_command (c : Command.t) (s : t) : t =
+  let s =
+    match c with
+    | Command.Switch Insert ->
+        {s with mode= Insert}
+    | Command.Navigation {count; move} ->
+        let cmd =
+          match move with
+          | Move.Char `Forward ->
+              Text_buffer.move `Right
+          | Move.Char `Backward ->
+              Text_buffer.move `Left
+          | Move.Line `Forward ->
+              Text_buffer.move `Down
+          | Move.Line `Backward ->
+              Text_buffer.move `Up
+          | Move.Word {style; part; dir} ->
+              Navigation.move_word style dir part
+        in
+        let buffer = apply_n count cmd s.buffer in
+        {s with buffer}
+    | _ ->
+        s
+  in
+  {s with last_cmd= Some c}
 
 let handle_input (s : t) (k : Notty.Unescape.key) : t =
   match s.mode with
@@ -43,5 +69,11 @@ let handle_input (s : t) (k : Notty.Unescape.key) : t =
         {s with buffer= Text_buffer.insert_uchar (Uchar.of_char c) s.buffer}
     | `Uchar u, _ ->
         {s with buffer= Text_buffer.insert_uchar u s.buffer}
+    | `Enter, _ ->
+        {s with buffer= Text_buffer.newline s.buffer}
+    | `Backspace, _ ->
+        {s with buffer= Text_buffer.backspace s.buffer}
+    | `Arrow a, _ ->
+        {s with buffer= Text_buffer.move a s.buffer}
     | _ ->
         s )
