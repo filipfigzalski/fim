@@ -63,8 +63,6 @@ type t = Continue of state | Finished of Command.t | Fail [@@deriving show]
 
 let init : t = Continue Start
 
-let reset (_ : t) : t = Continue Start
-
 let step (p : t) (c : char) : t =
   match p with
   | Continue s -> (

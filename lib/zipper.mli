@@ -3,8 +3,6 @@
 (** Abstract data type of zipper. *)
 type 'a t
 
-(** {1 Constructors and conversions.} *)
-
 val empty : 'a t
 (** An empty zipper. *)
 

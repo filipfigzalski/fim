@@ -20,7 +20,7 @@ let handle_input (s : t) (k : Notty.Unescape.key) : t =
     match k with
     (* Escape should always reset parser *)
     | `Escape, _ ->
-        {s with parser= Parser.reset s.parser}
+        {s with parser= Parser.init}
     | `ASCII c, _ -> (
         let parser = Parser.step s.parser c in
         match parser with

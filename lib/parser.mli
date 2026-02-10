@@ -1,10 +1,10 @@
 type state
 
+(** Abstract data type of Parser. *)
 type t = Continue of state | Finished of Command.t | Fail [@@deriving show]
 
 val init : t
-(** The initial stat *)
-
-val reset : t -> t
+(** Parser with initial state. *)
 
 val step : t -> char -> t
+(** Update Parser state machine with new char. *)
