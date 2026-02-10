@@ -19,9 +19,9 @@ type t =
 
 let immediate_of_char = function
   | 'x' ->
-      Some (DeleteChar `Before)
-  | 'X' ->
       Some (DeleteChar `After)
+  | 'X' ->
+      Some (DeleteChar `Before)
   | 'p' ->
       Some (Paste `Before)
   | 'P' ->
