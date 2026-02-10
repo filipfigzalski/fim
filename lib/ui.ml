@@ -24,4 +24,4 @@ let render (state : State.t) =
     ^ match state.last_cmd with Some cmd -> Command.show cmd | None -> ""
   in
   let debug_img = draw_multiline A.(fg lightyellow) debug_str in
-  I.vcat ([debug_img] @ above_imgs @ [current_img] @ below_imgs)
+  I.vcat (above_imgs @ [current_img] @ below_imgs @ [debug_img])
