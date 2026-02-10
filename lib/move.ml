@@ -22,9 +22,9 @@ let of_char = function
   | 'W' ->
       Some (Word {style= `WORD; part= `Start; dir= `Forward})
   | 'b' ->
-      Some (Word {style= `Word; part= `Start; dir= `Backward})
+      Some (Word {style= `Word; part= `End; dir= `Backward})
   | 'B' ->
-      Some (Word {style= `WORD; part= `Start; dir= `Backward})
+      Some (Word {style= `WORD; part= `End; dir= `Backward})
   | 'e' ->
       Some (Word {style= `Word; part= `End; dir= `Forward})
   | 'E' ->
