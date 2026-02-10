@@ -39,3 +39,5 @@ let split z =
   (prev, next)
 
 let delete_left z = match z.left with [] -> z | _ :: xs -> {z with left= xs}
+
+let delete_right z = match z.right with [] -> z | _ :: xs -> {z with right= xs}

@@ -63,6 +63,9 @@ val prepend_left : 'a list -> 'a t -> 'a t
 val delete_left : 'a t -> 'a t
 (** [delete_left z] removes the element to the left of the cursor.*)
 
+val delete_right : 'a t -> 'a t
+(** [delete_right z] removes the element to the right of the cursor.*)
+
 val split : 'a t -> 'a t * 'a t
 (** [split z] splits the zipper into two new zippers at the current focus.
     @returns [(left_part, right_part)]
