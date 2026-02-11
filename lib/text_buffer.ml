@@ -163,38 +163,6 @@ let move dir buffer =
       let current_line = Zipper.move_start buffer.current_line in
       {buffer with current_line; curswant}
 
-(* this function can move to next line *)
-let step_forward buffer =
-  if not (Zipper.is_end buffer.current_line) then
-    Some {buffer with current_line= Zipper.move_right buffer.current_line}
-  else
-    match buffer.lines_below with
-    | [] ->
-        None
-    | next :: lines_below ->
-        let old, current_line = swap_line next Start buffer in
-        Some
-          { buffer with
-            lines_above= old :: buffer.lines_above
-          ; current_line
-          ; lines_below }
-
-(* this function can move to previous line *)
-let step_backward buffer =
-  if not (Zipper.is_start buffer.current_line) then
-    Some {buffer with current_line= Zipper.move_left buffer.current_line}
-  else
-    match buffer.lines_above with
-    | [] ->
-        None
-    | prev :: lines_above ->
-        let old, current_line = swap_line prev End buffer in
-        Some
-          { buffer with
-            lines_above
-          ; current_line
-          ; lines_below= old :: buffer.lines_below }
-
 let is_alphanum = function
   | 'a' .. 'z' | 'A' .. 'Z' | '0' .. '9' | '_' | '@' ->
       true
