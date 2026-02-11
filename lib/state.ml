@@ -2,6 +2,7 @@ type mode = Normal | Insert
 
 type t =
   { buffer: Text_buffer.t
+  ; filename: string option
   ; mode: mode
   ; parser: Parser.t
   ; undo_stack: Text_buffer.t list
@@ -10,6 +11,7 @@ type t =
 
 let empty : t =
   { buffer= Text_buffer.empty_buffer
+  ; filename= None
   ; mode= Normal
   ; parser= Parser.init
   ; undo_stack= []

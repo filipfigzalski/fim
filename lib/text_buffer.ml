@@ -27,6 +27,19 @@ let string_to_uchars str =
   in
   loop 0 [] |> List.rev
 
+let of_string s =
+  let raw_lines = String.split_on_char '\n' s in
+  let lines =
+    match List.rev raw_lines with "" :: rest -> List.rev rest | _ -> raw_lines
+  in
+  match lines with
+  | [] ->
+      empty_buffer
+  | first :: rest ->
+      { empty_buffer with
+        current_line= first |> string_to_uchars |> Zipper.of_list
+      ; lines_below= rest }
+
 let cursor_coords buffer =
   let x = Zipper.position buffer.current_line in
   let y = List.length buffer.lines_above in

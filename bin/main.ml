@@ -26,6 +26,16 @@ let set_cursor_shape (state : State.t) =
   | Normal ->
       Cursor_shape.block_steady ()
 
+let read_file filename =
+  if Sys.file_exists filename then (
+    let ch = open_in filename in
+    try
+      let len = in_channel_length ch in
+      let content = really_input_string ch len in
+      close_in ch ; Some content
+    with _ -> close_in_noerr ch ; None )
+  else None
+
 let rec loop term state =
   Term.image term (Ui.render state) ;
   (* position cursor *)
@@ -46,5 +56,16 @@ let rec loop term state =
       loop term state
 
 let () =
+  let state =
+    match Array.length Sys.argv with
+    | len when len < 2 ->
+        State.empty
+    | _ ->
+        let filename = Sys.argv.(1) in
+        let contents = Option.get (read_file filename) in
+        { State.empty with
+          filename= Some filename
+        ; buffer= Text_buffer.of_string contents }
+  in
   let term = Term.create () in
-  loop term State.empty
+  loop term state
