@@ -214,8 +214,9 @@ let only_last = fun _acc x -> x
 
 let step end_func peek_func move_func buf =
   if not (end_func buf.current_line) then
+    let current_line = move_func buf.current_line in
     Some
-      ( {buf with current_line= move_func buf.current_line}
+      ( {buf with current_line; curswant= Zipper.position current_line}
       , buf.current_line |> peek_func |> Option.get )
   else None
 
