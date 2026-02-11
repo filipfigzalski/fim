@@ -112,18 +112,59 @@ let execute_command (c : Command.t) (s : t) : t =
       ; undo_stack= s.buffer :: s.undo_stack
       ; redo_stack= [] }
   | Operation
-      {count; op= Delete; target= Move {move= Word {style; part; dir}; _}}
-  | Navigation {count; move= Word {style; part; dir}} ->
-      (* selecting correct functions *)
-      let parse_function =
+      { count= c1
+      ; op= Delete
+      ; target= Move {count= c2; move= Word {style; part; dir}} } ->
+      let count = c1 * c2 in
+      let classify = Text_buffer.get_class style in
+      let peek, step =
+        match dir with
+        | `Forward ->
+            (Text_buffer.peek_forward, Text_buffer.step_forward_del)
+        | `Backward ->
+            (Text_buffer.peek_backward, Text_buffer.step_backward_del)
+      in
+      let scanner =
         match part with
         | `Start ->
             Text_buffer.parse_till_start
         | `End ->
             Text_buffer.parse_till_end
       in
-      let classify_func = Text_buffer.get_class style in
-      let peek_func, rev_peek, step_func, rev_step =
+      let buffer = s.buffer in
+      let buffer =
+        apply_n count (fun b -> fst (scanner classify peek step b)) buffer
+      in
+      {s with buffer; undo_stack= s.buffer :: s.undo_stack; redo_stack= []}
+  | Operation
+      { count= c1
+      ; op= Change
+      ; target= Move {count= c2; move= Word {style; part; dir}} } ->
+      let count = c1 * c2 in
+      let classify = Text_buffer.get_class style in
+      let peek, step =
+        match dir with
+        | `Forward ->
+            (Text_buffer.peek_forward, Text_buffer.step_forward_del)
+        | `Backward ->
+            (Text_buffer.peek_backward, Text_buffer.step_backward_del)
+      in
+      let scanner =
+        (* for some reason cw and ce do exactly the same thing ¯\_(ツ)_/¯ *)
+        Text_buffer.parse_till_end
+      in
+      let buffer = s.buffer in
+      let buffer =
+        apply_n count (fun b -> fst (scanner classify peek step b)) buffer
+      in
+      { s with
+        mode= Insert
+      ; buffer
+      ; undo_stack= s.buffer :: s.undo_stack
+      ; redo_stack= [] }
+  | Navigation {count; move= Word {style; part; dir}} ->
+      let classify = Text_buffer.get_class style in
+      let peek, peek_behind, step, step_behind =
         match dir with
         | `Forward ->
             ( Text_buffer.peek_forward
@@ -136,7 +177,13 @@ let execute_command (c : Command.t) (s : t) : t =
             , Text_buffer.step_backward
             , Text_buffer.step_forward )
       in
-      let buffer = s.buffer in
+      let scanner =
+        match part with
+        | `Start ->
+            Text_buffer.parse_till_start
+        | `End ->
+            Text_buffer.parse_till_end
+      in
       (* because in normal mode cursor i square, we need to have special
        * case for such cases:
        * End Forward    ->  wor[d] nex t 
@@ -148,36 +195,41 @@ let execute_command (c : Command.t) (s : t) : t =
        * 
        * if there is any way to go around it, I couldn't find it ;c
        *)
-      let buffer =
+      let is_inclusive_motion part dir =
         match (part, dir) with
-        | `End, `Forward | `Start, `Backward -> (
-          match step_func buffer with
-          | Some (({current_line; _} as new_buffer), _) -> (
-            match (peek_func current_line, rev_peek current_line) with
-            | Some left, Some right
-              when classify_func left != classify_func right ->
-                new_buffer
-            | _ ->
-                buffer )
-          | None ->
-              buffer )
+        | `End, `Forward | `Start, `Backward ->
+            true
         | _ ->
-            buffer
+            false
       in
-      let buffer, _ = parse_function classify_func peek_func step_func buffer in
+      let buffer = s.buffer in
+      let buffer =
+        if is_inclusive_motion part dir then
+          match step buffer with
+          | Some (new_buf, _) ->
+              let c_curr = Option.map classify (peek new_buf.current_line) in
+              let c_prev =
+                Option.map classify (peek_behind new_buf.current_line)
+              in
+              if c_curr <> c_prev then new_buf else buffer
+          | None ->
+              buffer
+        else buffer
+      in
+      let buffer =
+        apply_n count (fun b -> fst (scanner classify peek step b)) buffer
+      in
       (* as explained above, sometimes we have move cursor so that the square
        * is focused at the relevant letter
        *)
       let buffer =
-        match (dir, part) with
-        | `Forward, `End | `Backward, `Start -> (
-          match rev_step buffer with
+        if is_inclusive_motion part dir then
+          match step_behind buffer with
           | Some (new_buffer, _) ->
               new_buffer
           | None ->
-              buffer )
-        | _ ->
-            buffer
+              buffer
+        else buffer
       in
       {s with buffer}
   | Navigation {count; move} ->
