@@ -50,7 +50,10 @@ let execute_command (c : Command.t) (s : t) : t =
     | x :: xs ->
         {s with buffer= x; redo_stack= xs; undo_stack= s.buffer :: s.undo_stack}
     )
+  | Action {action= Paste dir; count} ->
+      failwith "paste not implemented"
   | Action {action= DeleteChar dir; count} ->
+      (* TODO: apply count *)
       let del_cmd =
         match dir with
         | `Before ->
@@ -58,10 +61,8 @@ let execute_command (c : Command.t) (s : t) : t =
         | `After ->
             Text_buffer.del_forward
       in
-      { s with
-        buffer= apply_n count del_cmd s.buffer
-      ; undo_stack= s.buffer :: s.undo_stack
-      ; redo_stack= [] }
+      let buffer, deleted = del_cmd s.buffer in
+      {s with buffer; undo_stack= s.buffer :: s.undo_stack; redo_stack= []}
   | Operation {op= Delete; target= Line; count} ->
       let buffer = apply_n count Text_buffer.delete_line s.buffer in
       {s with buffer; undo_stack= s.buffer :: s.undo_stack; redo_stack= []}
@@ -110,6 +111,75 @@ let execute_command (c : Command.t) (s : t) : t =
       ; buffer= new_buffer
       ; undo_stack= s.buffer :: s.undo_stack
       ; redo_stack= [] }
+  | Operation
+      {count; op= Delete; target= Move {move= Word {style; part; dir}; _}}
+  | Navigation {count; move= Word {style; part; dir}} ->
+      (* selecting correct functions *)
+      let parse_function =
+        match part with
+        | `Start ->
+            Text_buffer.parse_till_start
+        | `End ->
+            Text_buffer.parse_till_end
+      in
+      let classify_func = Text_buffer.get_class style in
+      let peek_func, rev_peek, step_func, rev_step =
+        match dir with
+        | `Forward ->
+            ( Text_buffer.peek_forward
+            , Text_buffer.peek_backward
+            , Text_buffer.step_forward
+            , Text_buffer.step_backward )
+        | `Backward ->
+            ( Text_buffer.peek_backward
+            , Text_buffer.peek_forward
+            , Text_buffer.step_backward
+            , Text_buffer.step_forward )
+      in
+      let buffer = s.buffer in
+      (* because in normal mode cursor i square, we need to have special
+       * case for such cases:
+       * End Forward    ->  wor[d] nex t 
+       *                    wor d  nex[t]
+       * Start Backward ->  p rev [w]ord 
+       *                   [p]rev  w ord
+       * this is because technically end of word is at word| but since we
+       * have square cursor, we have to go back to wor|d = wor[d]
+       * 
+       * if there is any way to go around it, I couldn't find it ;c
+       *)
+      let buffer =
+        match (part, dir) with
+        | `End, `Forward | `Start, `Backward -> (
+          match step_func buffer with
+          | Some (({current_line; _} as new_buffer), _) -> (
+            match (peek_func current_line, rev_peek current_line) with
+            | Some left, Some right
+              when classify_func left != classify_func right ->
+                new_buffer
+            | _ ->
+                buffer )
+          | None ->
+              buffer )
+        | _ ->
+            buffer
+      in
+      let buffer, _ = parse_function classify_func peek_func step_func buffer in
+      (* as explained above, sometimes we have move cursor so that the square
+       * is focused at the relevant letter
+       *)
+      let buffer =
+        match (dir, part) with
+        | `Forward, `End | `Backward, `Start -> (
+          match rev_step buffer with
+          | Some (new_buffer, _) ->
+              new_buffer
+          | None ->
+              buffer )
+        | _ ->
+            buffer
+      in
+      {s with buffer}
   | Navigation {count; move} ->
       let move_cmd =
         match move with
@@ -121,8 +191,6 @@ let execute_command (c : Command.t) (s : t) : t =
             Text_buffer.move `Down
         | Move.Line `Backward ->
             Text_buffer.move `Up
-        | Move.Word {style; part; dir} ->
-            Navigation.move_word style dir part
       in
       {s with buffer= apply_n count move_cmd s.buffer}
   | _ ->

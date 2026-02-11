@@ -60,12 +60,14 @@ let newline buffer =
   ; curswant= 0 }
 
 let del_forward buffer =
+  let deleted = Zipper.focus buffer.current_line in
   let current_line = Zipper.delete_right buffer.current_line in
-  {buffer with current_line; curswant= Zipper.position current_line}
+  ({buffer with current_line; curswant= Zipper.position current_line}, deleted)
 
 let del_backward buffer =
+  let deleted = Zipper.focus_left buffer.current_line in
   let current_line = Zipper.delete_left buffer.current_line in
-  {buffer with current_line; curswant= Zipper.position current_line}
+  ({buffer with current_line; curswant= Zipper.position current_line}, deleted)
 
 let insert_line dir buffer =
   match dir with
@@ -192,3 +194,94 @@ let step_backward buffer =
             lines_above
           ; current_line
           ; lines_below= old :: buffer.lines_below }
+
+let is_alphanum = function
+  | 'a' .. 'z' | 'A' .. 'Z' | '0' .. '9' | '_' | '@' ->
+      true
+  | _ ->
+      false
+
+type char_class = Word | Space | Other
+
+(* classify uchar based on the word style *)
+let get_class style u : char_class =
+  if Uchar.is_char u then
+    match (style, Uchar.to_char u) with
+    | _, (' ' | '\t') ->
+        Space
+    | `WORD, _ ->
+        Word
+    | `Word, c when is_alphanum c ->
+        Word
+    | `Word, _ ->
+        Other
+  else Word
+
+let rec skip_while p skip_func acc acc_func buf =
+  if p buf then
+    match skip_func buf with
+    | Some (next_buffer, skipped) ->
+        let new_acc = acc_func acc skipped in
+        skip_while p skip_func new_acc acc_func next_buffer
+    | None ->
+        (buf, acc)
+  else (buf, acc)
+
+let accumulate = fun acc x -> x :: acc
+
+let only_last = fun _acc x -> x
+
+let step end_func peek_func move_func buf =
+  if not (end_func buf.current_line) then
+    Some
+      ( {buf with current_line= move_func buf.current_line}
+      , buf.current_line |> peek_func |> Option.get )
+  else None
+
+let peek_forward = Zipper.focus
+
+let peek_backward = Zipper.focus_left
+
+let step_forward = step Zipper.is_end peek_forward Zipper.move_right
+
+let step_backward = step Zipper.is_start peek_backward Zipper.move_left
+
+let step_forward_del = step Zipper.is_end peek_forward Zipper.delete_right
+
+let step_backward_del = step Zipper.is_start peek_backward Zipper.delete_left
+
+let parse_till_start classify_func peek_func step_func (buf : t) : t * string =
+  (* check what is the class of next value in buffer *)
+  (* this treats end of line as a Space *)
+  let classify b =
+    b.current_line |> peek_func |> Option.map classify_func
+    |> Option.value ~default:Space
+  in
+  let is_wordclass wc b = classify b = wc in
+  let first_char_class = classify buf in
+  let buf, skipped =
+    skip_while (is_wordclass first_char_class) step_func [] accumulate buf
+  in
+  let buf, skipped =
+    skip_while (is_wordclass Space) step_func skipped accumulate buf
+  in
+  (buf, uchars_to_string skipped)
+
+let parse_till_end classify_func peek_func step_func (buf : t) : t * string =
+  let classify b =
+    b.current_line |> peek_func |> Option.map classify_func
+    |> Option.value ~default:Space
+  in
+  let is_wordclass wc b = classify b = wc in
+  let buf, skipped =
+    skip_while (is_wordclass Space) step_func [] accumulate buf
+  in
+  let first_non_space_class = classify buf in
+  let buf, skipped =
+    skip_while
+      (is_wordclass first_non_space_class)
+      step_func skipped accumulate buf
+  in
+  (buf, uchars_to_string skipped)
+
+let string_rev s = s |> string_to_uchars |> List.rev |> uchars_to_string
