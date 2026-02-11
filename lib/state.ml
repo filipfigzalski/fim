@@ -162,6 +162,49 @@ let execute_command (c : Command.t) (s : t) : t =
       ; buffer
       ; undo_stack= s.buffer :: s.undo_stack
       ; redo_stack= [] }
+  | Operation
+      { count= c1
+      ; op
+      ; target= TextObject {count= c2; scope; obj= WordObject style} } ->
+      let peek = Text_buffer.peek_forward in
+      let peek_behind = Text_buffer.peek_backward in
+      let step = Text_buffer.step_forward_del in
+      let step_behind = Text_buffer.step_backward_del in
+      let count = c1 * c2 in
+      let classify = Text_buffer.get_class style in
+      let buffer = s.buffer in
+      (* backwards we remove till ANY change *)
+      let buffer =
+        let c_curr = Option.map classify (peek buffer.current_line) in
+        let c_prev = Option.map classify (peek_behind buffer.current_line) in
+        if c_curr = c_prev then
+          fst
+            (Text_buffer.parse_till_change classify peek_behind step_behind
+               buffer )
+        else buffer
+      in
+      (* forwards depending on scope *)
+      let buffer =
+        match scope with
+        | Inner ->
+            apply_n count
+              (fun b -> fst (Text_buffer.parse_till_change classify peek step b))
+              buffer
+        | Around ->
+            apply_n count
+              (fun b -> fst (Text_buffer.parse_till_start classify peek step b))
+              buffer
+      in
+      let mode =
+        match op with
+        | Delete ->
+            Normal
+        | Change ->
+            Insert
+        | Yank ->
+            failwith "yank not implemented"
+      in
+      {s with mode; buffer; undo_stack= s.buffer :: s.undo_stack; redo_stack= []}
   | Navigation {count; move= Word {style; part; dir}} ->
       let classify = Text_buffer.get_class style in
       let peek, peek_behind, step, step_behind =

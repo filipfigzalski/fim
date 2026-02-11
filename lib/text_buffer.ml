@@ -252,4 +252,16 @@ let parse_till_end classify_func peek_func step_func (buf : t) : t * string =
   in
   (buf, uchars_to_string skipped)
 
+let parse_till_change classify_func peek_func step_func (buf : t) : t * string =
+  let classify b =
+    b.current_line |> peek_func |> Option.map classify_func
+    |> Option.value ~default:Space
+  in
+  let is_wordclass wc b = classify b = wc in
+  let first_class = classify buf in
+  let buf, skipped =
+    skip_while (is_wordclass first_class) step_func [] accumulate buf
+  in
+  (buf, uchars_to_string skipped)
+
 let string_rev s = s |> string_to_uchars |> List.rev |> uchars_to_string
