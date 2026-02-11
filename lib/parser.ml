@@ -115,8 +115,6 @@ let step (p : t) (c : char) : t =
               true
           | Change, 'c' ->
               true
-          | Yank, 'y' ->
-              true
           | _ ->
               false
         in

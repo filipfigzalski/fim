@@ -1,10 +1,6 @@
-type operator = Delete | Change | Yank [@@deriving show]
+type operator = Delete | Change [@@deriving show]
 
-type immediate =
-  | Paste of [`Before | `After]
-  | DeleteChar of [`Before | `After]
-  | Undo
-  | Redo
+type immediate = DeleteChar of [`Before | `After] | Undo | Redo
 [@@deriving show]
 
 type mode_switch = Insert | Append | Open of [`Below | `Above]
@@ -22,10 +18,6 @@ let immediate_of_char = function
       Some (DeleteChar `After)
   | 'X' ->
       Some (DeleteChar `Before)
-  | 'p' ->
-      Some (Paste `Before)
-  | 'P' ->
-      Some (Paste `After)
   | 'u' ->
       Some Undo
   (* <Ctrl-R> *)
@@ -51,7 +43,5 @@ let operation_of_char = function
       Some Delete
   | 'c' ->
       Some Change
-  | 'y' ->
-      Some Yank
   | _ ->
       None

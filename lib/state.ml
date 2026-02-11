@@ -50,8 +50,6 @@ let execute_command (c : Command.t) (s : t) : t =
     | x :: xs ->
         {s with buffer= x; redo_stack= xs; undo_stack= s.buffer :: s.undo_stack}
     )
-  | Action {action= Paste dir; count} ->
-      failwith "paste not implemented"
   | Action {action= DeleteChar dir; count} ->
       (* TODO: apply count *)
       let del_cmd =
@@ -61,7 +59,7 @@ let execute_command (c : Command.t) (s : t) : t =
         | `After ->
             Text_buffer.del_forward
       in
-      let buffer, deleted = del_cmd s.buffer in
+      let buffer = apply_n count (fun b -> fst (del_cmd b)) s.buffer in
       {s with buffer; undo_stack= s.buffer :: s.undo_stack; redo_stack= []}
   | Operation {op= Delete; target= Line; count} ->
       let buffer = apply_n count Text_buffer.delete_line s.buffer in
@@ -139,7 +137,7 @@ let execute_command (c : Command.t) (s : t) : t =
   | Operation
       { count= c1
       ; op= Change
-      ; target= Move {count= c2; move= Word {style; part; dir}} } ->
+      ; target= Move {count= c2; move= Word {style; part= _; dir}} } ->
       let count = c1 * c2 in
       let classify = Text_buffer.get_class style in
       let peek, step =
@@ -195,15 +193,7 @@ let execute_command (c : Command.t) (s : t) : t =
               (fun b -> fst (Text_buffer.parse_till_start classify peek step b))
               buffer
       in
-      let mode =
-        match op with
-        | Delete ->
-            Normal
-        | Change ->
-            Insert
-        | Yank ->
-            failwith "yank not implemented"
-      in
+      let mode = match op with Delete -> Normal | Change -> Insert in
       {s with mode; buffer; undo_stack= s.buffer :: s.undo_stack; redo_stack= []}
   | Navigation {count; move= Word {style; part; dir}} ->
       let classify = Text_buffer.get_class style in
@@ -286,6 +276,8 @@ let execute_command (c : Command.t) (s : t) : t =
             Text_buffer.move `Down
         | Move.Line `Backward ->
             Text_buffer.move `Up
+        | Move.Word _ ->
+            failwith "implemented above"
       in
       {s with buffer= apply_n count move_cmd s.buffer}
   | _ ->

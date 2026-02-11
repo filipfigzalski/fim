@@ -1,5 +1,4 @@
-type textobject = WordObject of [`Word | `WORD] | ParagraphObject
-[@@deriving show]
+type textobject = WordObject of [`Word | `WORD] [@@deriving show]
 
 type scope = Inner | Around [@@deriving show]
 
@@ -14,8 +13,6 @@ let textobject_of_char = function
       Some (WordObject `Word)
   | 'W' ->
       Some (WordObject `WORD)
-  | 'p' ->
-      Some ParagraphObject
   | _ ->
       None
 

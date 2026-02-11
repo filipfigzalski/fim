@@ -22,7 +22,7 @@ let get_buffer (state : State.t) = state.buffer
 let set_cursor_shape (state : State.t) =
   match state.mode with
   | Insert ->
-      Cursor_shape.bar_steady ()
+      Cursor_shape.bar_blinking ()
   | Normal ->
       Cursor_shape.block_steady ()
 
